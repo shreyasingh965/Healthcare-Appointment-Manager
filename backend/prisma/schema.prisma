@@ -4,10 +4,98 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+enum Role {
+  ADMIN
+  DOCTOR
+  PATIENT
+}
+
+enum AppointmentStatus {
+  BOOKED
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  createdAt DateTime @default(now())
+}
+
+model Doctor {
+  id                Int      @id @default(autoincrement())
+  name              String
+  specialization    String
+  experience        Int
+  consultationFee   Float
+  availableDays     String[]
+  startTime         String
+  endTime           String
+  slotDuration      Int
+
+  appointments      Appointment[]
+  leaves            Leave[]
+}
+
+model Leave {
+  id        Int      @id @default(autoincrement())
+  date      DateTime
+
+  doctorId  Int
+  doctor    Doctor   @relation(fields: [doctorId], references: [id])
+}
+
+model Appointment {
+  id                Int      @id @default(autoincrement())
+
+  patientName       String
+  patientEmail      String
+
+  doctorId          Int
+  doctor            Doctor   @relation(fields: [doctorId], references: [id])
+
+  appointmentDate   DateTime
+
+  symptoms          String
+
+  preVisitSummary   String?
+
+  doctorNotes       String?   
+  postVisitSummary  String?
+
+  prescription      String?
+
+  status            AppointmentStatus @default(BOOKED)
+
+  createdAt         DateTime @default(now())
+
+  reminders         MedicationReminder[]
+
+  @@unique([doctorId, appointmentDate])
+}
+model MedicationReminder {
+  id              Int      @id @default(autoincrement())
+
+  medicine        String
+
+  frequency       String
+
+  nextReminder    DateTime
+
+  appointmentId   Int
+
+  appointment     Appointment @relation(fields: [appointmentId], references: [id])
 }
